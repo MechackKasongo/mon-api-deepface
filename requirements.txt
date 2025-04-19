@@ -1,3 +1,4 @@
 Flask
 deepface
 opencv-python
+tf-keras
