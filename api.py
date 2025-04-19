@@ -7,11 +7,15 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 
 # Dossier contenant les images d'entraînement (dataset)
-root_dir = "dataset"  # Ce dossier doit être ajouté dans ton projet
+root_dir = "dataset"  # Ce dossier doit être présent dans ton projet
 
 def check_image(path):
     img = cv2.imread(path)
     return img is not None
+
+@app.route('/')
+def index():
+    return jsonify({"message": "DeepFace API is running!"})
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -23,11 +27,17 @@ def predict():
         return jsonify({'error': 'Fichier vide'}), 400
 
     filename = secure_filename(file.filename)
-    input_path = os.path.join("uploads", filename)
-    os.makedirs("uploads", exist_ok=True)
+    upload_dir = "uploads"
+    os.makedirs(upload_dir, exist_ok=True)
+    input_path = os.path.join(upload_dir, filename)
     file.save(input_path)
 
-    # Chargement des images de référence
+    # Vérifie si le fichier est une image
+    if not check_image(input_path):
+        os.remove(input_path)
+        return jsonify({'error': 'Fichier invalide ou non lisible comme image'}), 400
+
+    # Parcours du dataset pour identifier la personne
     for person in os.listdir(root_dir):
         person_dir = os.path.join(root_dir, person)
         if os.path.isdir(person_dir):
@@ -41,10 +51,11 @@ def predict():
                             'confiance': f"{100 * (1 - result['distance']):.2f} %"
                         })
                 except Exception as e:
-                    print(e)
+                    print(f"Erreur avec l'image {reference_path} : {e}")
                     continue
 
     return jsonify({'message': "Personne non reconnue"}), 200
 
 if __name__ == '__main__':
-    app.run()
+    port = int(os.environ.get("PORT", 5000))  # Port nécessaire pour Render
+    app.run(host="0.0.0.0", port=port)
