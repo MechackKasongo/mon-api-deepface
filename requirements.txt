@@ -1,4 +1,5 @@
-Flask
 deepface
-opencv-python
-tf-keras
+flask
+opencv-python-headless
+matplotlib
+Pillow
