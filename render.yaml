@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: api-reconnaissance
+    name: face-api
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python api.py
+    startCommand: python app.py
