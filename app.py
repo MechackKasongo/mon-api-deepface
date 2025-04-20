@@ -1,54 +1,43 @@
-# app.py
-
 from flask import Flask, request, jsonify
 from deepface import DeepFace
 import os
-import cv2
-from PIL import Image
-import numpy as np
 
 app = Flask(__name__)
 
-ROOT_DIR = 'dataset'  # ton dossier de référence (avec les sous-dossiers des membres)
+# Dossier dataset avec les sous-dossiers de visages
+DATASET_PATH = "dataset"
 
-def check_image(path):
-    img = cv2.imread(path)
-    return img is not None
+@app.route("/", methods=["GET"])
+def index():
+    return "API DeepFace OK!"
 
 @app.route("/predict", methods=["POST"])
 def predict():
     if 'image' not in request.files:
         return jsonify({"error": "Aucune image reçue"}), 400
 
-    file = request.files['image']
-    temp_path = "input.jpg"
-    file.save(temp_path)
-
-    if not check_image(temp_path):
-        return jsonify({"error": "Image illisible"}), 400
+    image = request.files['image']
+    image_path = os.path.join("temp.jpg")
+    image.save(image_path)
 
     members = {}
-    for person_name in os.listdir(ROOT_DIR):
-        person_dir = os.path.join(ROOT_DIR, person_name)
+    for person_name in os.listdir(DATASET_PATH):
+        person_dir = os.path.join(DATASET_PATH, person_name)
         if os.path.isdir(person_dir):
-            images = [os.path.join(person_dir, img) for img in os.listdir(person_dir)]
-            members[person_name] = images
+            member_images = [os.path.join(person_dir, img) for img in os.listdir(person_dir)]
+            members[person_name] = member_images
 
     for member, images in members.items():
-        for image in images:
+        for img in images:
             try:
-                result = DeepFace.verify(temp_path, image, model_name='VGG-Face')
+                result = DeepFace.verify(image_path, img, model_name='VGG-Face')
                 if result['verified']:
                     confidence = 100 * (1 - result['distance'])
                     return jsonify({
-                        "class_name": member,
-                        "confidence": round(confidence, 2)
+                        "class": member,
+                        "confidence": f"{confidence:.2f}%"
                     })
-
             except Exception as e:
-                print(f"Erreur avec {member} : {e}")
+                continue
 
-    return jsonify({"class_name": "Inconnu", "confidence": 0})
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    return jsonify({"class": "Inconnu", "confidence": "0%"})
