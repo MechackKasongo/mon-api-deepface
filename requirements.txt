@@ -1,5 +1,12 @@
+tensorflow==2.19.0
+tf-keras
 deepface
 flask
+flask-cors
+opencv-python
 opencv-python-headless
+retina-face
 matplotlib
-Pillow
+numpy
+pandas
+gunicorn
